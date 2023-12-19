@@ -4,7 +4,6 @@
 //
 //  Created by Anup D'Souza
 //
-
 import SwiftUI
 
 struct MultiturnChatView: View {
@@ -13,8 +12,10 @@ struct MultiturnChatView: View {
     @State var timer: Timer?
     @State var chatService = ChatService()
     
+    
+    
     var body: some View {
-        VStack {
+        ZStack (alignment : .top) {
             // MARK: Animating logo
             Image(.geminiLogo)
                 .resizable()
@@ -23,38 +24,50 @@ struct MultiturnChatView: View {
                 .opacity(logoAnimating ? 0.5 : 1)
                 .animation(.easeInOut, value: logoAnimating)
             
-            // MARK: Chat message list
-            ScrollViewReader(content: { proxy in
-                ScrollView {
-                    ForEach(chatService.messages) { chatMessage in
-                        // MARK: Chat message view
-                        chatMessageView(chatMessage)
-                    }
-                }
-                .onChange(of: chatService.messages) { _, _ in
-                    guard let recentMessage = chatService.messages.last else { return }
-                    DispatchQueue.main.async {
-                        withAnimation {
-                            proxy.scrollTo(recentMessage.id, anchor: .bottom)
+            VStack {
+                
+                
+                // MARK: Chat message list
+                ScrollViewReader(content: { proxy in
+                    ScrollView {
+                        ForEach(chatService.messages) { chatMessage in
+                            // MARK: Chat message view
+                            chatMessageView(chatMessage)
                         }
                     }
-                }
-                .onChange(of: chatService.loadingResponse) { _, newValue in
-                    if newValue {
-                        startLoadingAnimation()
-                    } else {
-                        stopLoadingAnimation()
+                    .onChange(of: chatService.messages) { _, _ in
+                        guard let recentMessage = chatService.messages.last else { return }
+                        DispatchQueue.main.async {
+                            withAnimation {
+                                proxy.scrollTo(recentMessage.id, anchor: .bottom)
+                            }
+                        }
                     }
-                }
-            })
-            
-            // MARK: Input fields
-            HStack {
-                TextField("Enter a message...", text: $textInput)
-                    .textFieldStyle(.roundedBorder)
-                    .foregroundColor(.black)
-                Button(action: sendMessage) {
-                    Image(systemName: "paperplane.fill")
+                    .onChange(of: chatService.loadingResponse) { _, newValue in
+                        if newValue {
+                            startLoadingAnimation()
+                        } else {
+                            stopLoadingAnimation()
+                        }
+                    }
+                })
+                
+                // MARK: Input fields
+                HStack {
+                    TextEditor(text: $textInput)
+                        .frame(height: max(20, CGFloat(lineCount() * 20)))
+                        .foregroundColor(.primary)
+                        .cornerRadius(10)
+                        .padding()
+
+                    Button(action: sendMessage) {
+                        Image(systemName: "paperplane.fill")
+                            .foregroundColor(.blue)
+                            .padding(8) // ボタン内の余白を調整
+                            .cornerRadius(8)
+                            .shadow(color: .gray, radius: 2, x: 1, y: 1) // 影を追加
+                    }
+                    .padding(.leading) // 左側の余白を追加
                 }
             }
         }
@@ -63,7 +76,7 @@ struct MultiturnChatView: View {
         .background {
             // MARK: Background
             ZStack {
-                Color.black
+                Color.primary
             }
             .ignoresSafeArea()
         }
@@ -96,6 +109,11 @@ struct MultiturnChatView: View {
         logoAnimating = false
         timer?.invalidate()
         timer = nil
+    }
+    
+    func lineCount() -> Int {
+        let lineBreaks = textInput.components(separatedBy: CharacterSet.newlines)
+        return lineBreaks.count
     }
 }
 
